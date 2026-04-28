@@ -6,6 +6,8 @@ A simple website for browsing and previewing the official Piper TTS voices.
 
 [https://sahadebjit13.github.io/piper-tts-preview/](https://sahadebjit13.github.io/piper-tts-preview/)
 
+GitHub Pages is the primary deployment target for this project.
+
 ## Features
 
 - Browse the current Piper voice catalog
