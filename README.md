@@ -12,6 +12,7 @@ A simple website for browsing and previewing the official Piper TTS voices.
 - Search by language, voice name, quality, or model key
 - Filter single-speaker and multi-speaker models
 - Preview official sample clips directly in the browser
+- Generate custom-text audio in the browser with the selected Piper voice
 - Jump from each card to the corresponding model files on Hugging Face
 
 ## Local Development

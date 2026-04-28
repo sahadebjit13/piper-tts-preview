@@ -1,9 +1,18 @@
+import {
+  setVoice as loadPiperVoice,
+  textToWavAudio,
+} from "https://rhasspy.github.io/piper-samples/resources/piper.js";
+
 const SAMPLE_BASE_URL = "https://rhasspy.github.io/piper-samples/samples";
-const MODEL_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/tree/main";
+const MODEL_BROWSE_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/tree/main";
+const MODEL_RESOLVE_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
 const QUALITY_ORDER = ["x_low", "low", "medium", "high"];
 
 const state = {
   voices: [],
+  selectedVoiceKey: "",
+  loadedVoiceKey: "",
+  isSynthesizing: false,
   filters: {
     search: "",
     language: "",
@@ -23,6 +32,13 @@ const elements = {
   languageCount: document.querySelector("#language-count"),
   multispeakerCount: document.querySelector("#multispeaker-count"),
   template: document.querySelector("#voice-card-template"),
+  selectedVoiceName: document.querySelector("#selected-voice-name"),
+  selectedVoiceMeta: document.querySelector("#selected-voice-meta"),
+  customText: document.querySelector("#custom-text"),
+  customSpeaker: document.querySelector("#custom-speaker"),
+  synthesizeButton: document.querySelector("#synthesize-button"),
+  synthesisStatus: document.querySelector("#synthesis-status"),
+  customAudio: document.querySelector("#custom-audio"),
 };
 
 function formatLanguage(voice) {
@@ -39,9 +55,23 @@ function getSampleBasePath(voice) {
   return `${SAMPLE_BASE_URL}/${family}/${voice.language.code}/${voice.name}/${voice.quality}`;
 }
 
-function getModelUrl(voice) {
+function getModelBrowseUrl(voice) {
   const family = getLanguageFamily(voice.language.code);
-  return `${MODEL_BASE_URL}/${family}/${voice.language.code}/${voice.name}/${voice.quality}/`;
+  return `${MODEL_BROWSE_BASE_URL}/${family}/${voice.language.code}/${voice.name}/${voice.quality}/`;
+}
+
+function getModelPaths(voice) {
+  const fileEntries = Object.keys(voice.files ?? {});
+  const modelPath = fileEntries.find(
+    (path) => path.endsWith(".onnx") && !path.endsWith(".onnx.json"),
+  );
+  const configPath = fileEntries.find((path) => path.endsWith(".onnx.json"));
+
+  return { modelPath, configPath };
+}
+
+function getModelResolveUrl(path) {
+  return `${MODEL_RESOLVE_BASE_URL}/${path}`;
 }
 
 function getSpeakerEntries(voice) {
@@ -148,10 +178,60 @@ function getFilteredVoices() {
   });
 }
 
+function getVoiceByKey(key) {
+  return state.voices.find((voice) => voice.key === key) ?? null;
+}
+
 function updateResultsSummary(count) {
   const total = state.voices.length;
   elements.resultsSummary.textContent =
     count === total ? `Showing all ${total} voices.` : `Showing ${count} of ${total} voices.`;
+}
+
+function updateSynthesisStatus(message) {
+  elements.synthesisStatus.textContent = message;
+}
+
+function setSynthesisBusy(isBusy) {
+  state.isSynthesizing = isBusy;
+  elements.synthesizeButton.disabled = isBusy || !state.selectedVoiceKey;
+  elements.synthesizeButton.textContent = isBusy
+    ? "Synthesizing..."
+    : "Synthesize custom audio";
+}
+
+function updateCustomSpeakerOptions(voice) {
+  elements.customSpeaker.innerHTML = "";
+
+  getSpeakerEntries(voice).forEach((speaker) => {
+    const option = document.createElement("option");
+    option.value = speaker.value;
+    option.textContent = speaker.label;
+    elements.customSpeaker.append(option);
+  });
+}
+
+function updateSelectedVoicePanel() {
+  const voice = getVoiceByKey(state.selectedVoiceKey);
+
+  if (!voice) {
+    elements.selectedVoiceName.textContent = "No voice selected yet";
+    elements.selectedVoiceMeta.textContent = "Choose a voice card to start.";
+    elements.synthesizeButton.disabled = true;
+    return;
+  }
+
+  elements.selectedVoiceName.textContent = voice.key;
+  elements.selectedVoiceMeta.textContent = `${formatLanguage(voice)} • ${voice.num_speakers > 1 ? `${voice.num_speakers} speakers` : "single speaker"} • ${voice.quality}`;
+  updateCustomSpeakerOptions(voice);
+  elements.synthesizeButton.disabled = state.isSynthesizing;
+}
+
+function selectVoice(voiceKey) {
+  state.selectedVoiceKey = voiceKey;
+  updateSelectedVoicePanel();
+  renderVoices();
+  updateSynthesisStatus("Selected voice is ready. Enter text and synthesize when you want.");
 }
 
 function createVoiceCard(voice) {
@@ -163,6 +243,7 @@ function createVoiceCard(voice) {
   const quality = fragment.querySelector(".quality-pill");
   const speakersChip = fragment.querySelector(".speakers-chip");
   const downloadLink = fragment.querySelector(".download-link");
+  const selectVoiceButton = fragment.querySelector(".select-voice-button");
   const audio = fragment.querySelector(".voice-audio");
   const speakerPicker = fragment.querySelector(".speaker-picker");
   const speakerSelect = fragment.querySelector(".speaker-select");
@@ -174,7 +255,17 @@ function createVoiceCard(voice) {
   quality.textContent = voice.quality;
   speakersChip.textContent =
     voice.num_speakers > 1 ? `${voice.num_speakers} speakers` : "Single speaker";
-  downloadLink.href = getModelUrl(voice);
+  downloadLink.href = getModelBrowseUrl(voice);
+
+  if (voice.key === state.selectedVoiceKey) {
+    card.classList.add("is-selected");
+    selectVoiceButton.classList.add("is-selected");
+    selectVoiceButton.textContent = "Selected for custom text";
+  }
+
+  selectVoiceButton.addEventListener("click", () => {
+    selectVoice(voice.key);
+  });
 
   speakerEntries.forEach((speaker) => {
     const option = document.createElement("option");
@@ -242,6 +333,58 @@ function bindControls() {
     state.filters.speakerType = event.target.value;
     renderVoices();
   });
+
+  elements.synthesizeButton.addEventListener("click", synthesizeCustomAudio);
+}
+
+async function ensureVoiceLoaded(voice) {
+  if (state.loadedVoiceKey === voice.key) {
+    return;
+  }
+
+  const { modelPath, configPath } = getModelPaths(voice);
+  if (!modelPath || !configPath) {
+    throw new Error("This voice is missing a model or config path.");
+  }
+
+  updateSynthesisStatus("Loading the selected voice model into the browser...");
+  await loadPiperVoice(getModelResolveUrl(modelPath), getModelResolveUrl(configPath));
+  state.loadedVoiceKey = voice.key;
+}
+
+async function synthesizeCustomAudio() {
+  const voice = getVoiceByKey(state.selectedVoiceKey);
+  if (!voice) {
+    updateSynthesisStatus("Select a voice first.");
+    return;
+  }
+
+  const text = elements.customText.value.trim();
+  if (!text) {
+    updateSynthesisStatus("Enter some text to synthesize.");
+    return;
+  }
+
+  try {
+    setSynthesisBusy(true);
+    await ensureVoiceLoaded(voice);
+
+    updateSynthesisStatus("Generating audio...");
+    const wavAudio = await textToWavAudio(
+      text,
+      Number(elements.customSpeaker.value || "0"),
+    );
+
+    const audioUrl = URL.createObjectURL(wavAudio);
+    elements.customAudio.src = audioUrl;
+    await elements.customAudio.play().catch(() => {});
+    updateSynthesisStatus("Custom audio is ready.");
+  } catch (error) {
+    console.error(error);
+    updateSynthesisStatus("Synthesis failed for this voice in the browser. Try a shorter sample or another voice.");
+  } finally {
+    setSynthesisBusy(false);
+  }
 }
 
 async function init() {
@@ -254,6 +397,12 @@ async function init() {
     populateFilters(voices);
     updateStats(voices);
     bindControls();
+
+    if (voices.length > 0) {
+      state.selectedVoiceKey = voices[0].key;
+      updateSelectedVoicePanel();
+    }
+
     renderVoices();
   } catch (error) {
     elements.resultsSummary.textContent = "Could not load the Piper voice catalog.";

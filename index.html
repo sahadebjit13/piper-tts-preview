@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Piper Voice Preview</title>
     <link rel="preconnect" href="https://rhasspy.github.io" />
+    <link rel="preconnect" href="https://huggingface.co" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -34,6 +35,55 @@
           </div>
         </div>
       </header>
+
+      <section class="composer" aria-label="Custom text testing">
+        <div class="composer-copy">
+          <p class="eyebrow">Custom text</p>
+          <h2>Test your own sentences and paragraphs with a selected Piper voice.</h2>
+          <p class="composer-text">
+            Pick a voice from the cards below, then generate fresh audio in the
+            browser. The first run for a voice may take a while because the
+            model downloads from Hugging Face before synthesis starts.
+          </p>
+          <div class="selected-voice">
+            <span class="selected-voice__label">Selected voice</span>
+            <strong id="selected-voice-name">No voice selected yet</strong>
+            <span id="selected-voice-meta" class="selected-voice__meta">
+              Choose a voice card to start.
+            </span>
+          </div>
+        </div>
+
+        <div class="composer-panel">
+          <label class="composer-field" for="custom-text">
+            <span>Text to synthesize</span>
+            <textarea
+              id="custom-text"
+              rows="8"
+              placeholder="Type a sentence, paragraph, or longer sample here..."
+            >Piper is a fast, local text to speech engine. This preview lets you compare voices and now test your own text directly in the browser.</textarea>
+          </label>
+
+          <div class="composer-controls">
+            <label class="composer-field">
+              <span>Speaker</span>
+              <select id="custom-speaker">
+                <option value="0">Default</option>
+              </select>
+            </label>
+
+            <button id="synthesize-button" class="synthesize-button" type="button" disabled>
+              Synthesize custom audio
+            </button>
+          </div>
+
+          <p id="synthesis-status" class="synthesis-status" aria-live="polite">
+            Select a voice to enable custom synthesis.
+          </p>
+
+          <audio id="custom-audio" class="voice-audio" controls preload="none"></audio>
+        </div>
+      </section>
 
       <section class="controls" aria-label="Voice filters">
         <label class="control search-control">
@@ -92,7 +142,10 @@
 
         <div class="meta-row">
           <span class="meta-chip speakers-chip"></span>
-          <a class="download-link" target="_blank" rel="noreferrer">Model files</a>
+          <div class="card-actions">
+            <button class="select-voice-button" type="button">Use for custom text</button>
+            <a class="download-link" target="_blank" rel="noreferrer">Model files</a>
+          </div>
         </div>
 
         <label class="speaker-picker" hidden>
@@ -104,6 +157,7 @@
       </article>
     </template>
 
-    <script src="./app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
