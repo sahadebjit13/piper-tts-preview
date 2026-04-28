@@ -1,5 +1,7 @@
 # Piper TTS Preview
 
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-222?logo=github&logoColor=white)](https://sahadebjit13.github.io/piper-tts-preview/)
+
 A simple website for browsing and previewing the official Piper TTS voices.
 
 ## Live Demo
