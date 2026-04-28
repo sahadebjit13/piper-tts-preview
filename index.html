@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piper Voice Preview</title>
+    <link rel="preconnect" href="https://rhasspy.github.io" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Piper TTS voice browser</p>
+          <h1>Preview every Piper voice from one simple website.</h1>
+          <p class="hero-text">
+            Search by language, voice, or model key. Filter by quality, inspect
+            speaker variants, and play the official preview clips inline.
+          </p>
+        </div>
+
+        <div class="hero-stats" aria-label="Catalog summary">
+          <div class="stat-card">
+            <span class="stat-label">Voices</span>
+            <strong id="voice-count">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Languages</span>
+            <strong id="language-count">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Multi-speaker</span>
+            <strong id="multispeaker-count">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="Voice filters">
+        <label class="control search-control">
+          <span>Search</span>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Try en_US, thorsten, lessac, medium..."
+          />
+        </label>
+
+        <label class="control">
+          <span>Language</span>
+          <select id="language-filter">
+            <option value="">All languages</option>
+          </select>
+        </label>
+
+        <label class="control">
+          <span>Quality</span>
+          <select id="quality-filter">
+            <option value="">All qualities</option>
+          </select>
+        </label>
+
+        <label class="control">
+          <span>Speakers</span>
+          <select id="speaker-filter">
+            <option value="">Any model</option>
+            <option value="single">Single speaker</option>
+            <option value="multi">Multi-speaker</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="results-bar" aria-live="polite">
+        <p id="results-summary">Loading voices...</p>
+      </section>
+
+      <main>
+        <section id="voice-grid" class="voice-grid" aria-label="Voice previews"></section>
+      </main>
+    </div>
+
+    <template id="voice-card-template">
+      <article class="voice-card">
+        <div class="voice-card__header">
+          <div>
+            <p class="voice-language"></p>
+            <h2 class="voice-name"></h2>
+          </div>
+          <span class="quality-pill"></span>
+        </div>
+
+        <p class="voice-key"></p>
+
+        <div class="meta-row">
+          <span class="meta-chip speakers-chip"></span>
+          <a class="download-link" target="_blank" rel="noreferrer">Model files</a>
+        </div>
+
+        <label class="speaker-picker" hidden>
+          <span>Preview speaker</span>
+          <select class="speaker-select"></select>
+        </label>
+
+        <audio class="voice-audio" controls preload="none"></audio>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
