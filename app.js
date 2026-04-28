@@ -7,6 +7,30 @@ const SAMPLE_BASE_URL = "https://rhasspy.github.io/piper-samples/samples";
 const MODEL_BROWSE_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/tree/main";
 const MODEL_RESOLVE_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
 const QUALITY_ORDER = ["x_low", "low", "medium", "high"];
+const FEMALE_NAME_HINTS = new Set([
+  "alba", "alma", "amy", "anna", "aru", "berta", "cori", "daniela",
+  "eva_k", "gosia", "irina", "jenny_dioco", "kathleen", "kerstin",
+  "kristin", "lada", "lili", "lisa", "maider", "marylux", "maya",
+  "meera", "nathalie", "natia", "padmavathi", "paola", "priyamvada",
+  "ramona", "rapunzelina", "raya", "salka", "siwis", "ugla", "upc_ona",
+  "xiao_ya",
+]);
+const MALE_NAME_HINTS = new Set([
+  "aivars", "alan", "ald", "alex", "amir", "antton", "arjun", "artur",
+  "bass", "bryce", "bui", "cadu", "carlfm", "chaowen", "chitwan",
+  "claude", "danny", "darkman", "davefx", "denis", "dimitar", "dmitri",
+  "edon", "edresson", "faber", "fasih", "gilles", "harri", "imre",
+  "issai", "jeff", "joe", "john", "jirka", "kareem", "karlsson",
+  "kusal", "mihai", "norman", "pavoque", "pratham", "reza_ibrahim",
+  "riccardo", "rohan", "ronnie", "ruslan", "ryan", "sam", "steinn",
+  "thorsten", "tom", "upc_pau", "venkatesh",
+]);
+const MIXED_VOICE_HINTS = [
+  "arctic", "bu_tts", "dfki", "google", "hfc_", "lanfrica", "libritts",
+  "ljspeech", "mc_speech", "mls", "news_tts", "northern_english_male",
+  "nst", "semaine", "southern_english_female", "talesyntese", "thorsten_emotional",
+  "ukrainian_tts", "vais1000", "vctk", "vivos",
+];
 
 const state = {
   voices: [],
@@ -85,6 +109,42 @@ function getSpeakerEntries(voice) {
       label: `${name} (${id})`,
       value: String(id),
     }));
+}
+
+function getVoiceGender(voice) {
+  const normalized = `${voice.name} ${voice.key}`.toLowerCase();
+
+  if (normalized.includes("female")) {
+    return "female";
+  }
+
+  if (normalized.includes("male")) {
+    return "male";
+  }
+
+  if (voice.num_speakers > 1) {
+    return "mixed";
+  }
+
+  if (FEMALE_NAME_HINTS.has(voice.name)) {
+    return "female";
+  }
+
+  if (MALE_NAME_HINTS.has(voice.name)) {
+    return "male";
+  }
+
+  if (MIXED_VOICE_HINTS.some((hint) => normalized.includes(hint))) {
+    return "mixed";
+  }
+
+  return "female";
+}
+
+function formatGenderLabel(gender) {
+  if (gender === "male") return "Male";
+  if (gender === "mixed") return "Mixed";
+  return "Female";
 }
 
 function normalizeVoices(rawVoices) {
@@ -241,6 +301,7 @@ function createVoiceCard(voice) {
   const language = fragment.querySelector(".voice-language");
   const key = fragment.querySelector(".voice-key");
   const quality = fragment.querySelector(".quality-pill");
+  const genderChip = fragment.querySelector(".gender-chip");
   const speakersChip = fragment.querySelector(".speakers-chip");
   const downloadLink = fragment.querySelector(".download-link");
   const selectVoiceButton = fragment.querySelector(".select-voice-button");
@@ -253,6 +314,10 @@ function createVoiceCard(voice) {
   language.textContent = formatLanguage(voice);
   key.textContent = voice.key;
   quality.textContent = voice.quality;
+  quality.dataset.quality = voice.quality;
+  const gender = getVoiceGender(voice);
+  genderChip.textContent = formatGenderLabel(gender);
+  genderChip.dataset.gender = gender;
   speakersChip.textContent =
     voice.num_speakers > 1 ? `${voice.num_speakers} speakers` : "Single speaker";
   downloadLink.href = getModelBrowseUrl(voice);

@@ -9,6 +9,14 @@
   --line: rgba(75, 49, 39, 0.14);
   --brand: #bb4d00;
   --brand-soft: rgba(187, 77, 0, 0.12);
+  --quality-x-low-bg: #e4e7eb;
+  --quality-x-low-ink: #4d5a67;
+  --quality-low-bg: #d8ebff;
+  --quality-low-ink: #185a9d;
+  --quality-medium-bg: #ffe7bf;
+  --quality-medium-ink: #a14c00;
+  --quality-high-bg: #d8f4df;
+  --quality-high-ink: #1d6b3f;
   --shadow: 0 18px 50px rgba(86, 49, 15, 0.12);
   --radius-xl: 28px;
   --radius-lg: 20px;
@@ -297,7 +305,7 @@ h1 {
 .voice-grid {
   margin-top: 1.25rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1rem;
 }
 
@@ -314,11 +322,17 @@ h1 {
 }
 
 .voice-card__header,
+.tag-row,
 .meta-row {
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.tag-row {
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .voice-language,
@@ -335,6 +349,7 @@ h1 {
 .voice-name {
   margin: 0.25rem 0 0;
   font-size: 1.25rem;
+  overflow-wrap: anywhere;
 }
 
 .voice-key {
@@ -359,10 +374,46 @@ h1 {
 .quality-pill {
   background: var(--brand-soft);
   color: var(--brand);
+  align-self: flex-start;
+}
+
+.quality-pill[data-quality="x_low"] {
+  background: var(--quality-x-low-bg);
+  color: var(--quality-x-low-ink);
+}
+
+.quality-pill[data-quality="low"] {
+  background: var(--quality-low-bg);
+  color: var(--quality-low-ink);
+}
+
+.quality-pill[data-quality="medium"] {
+  background: var(--quality-medium-bg);
+  color: var(--quality-medium-ink);
+}
+
+.quality-pill[data-quality="high"] {
+  background: var(--quality-high-bg);
+  color: var(--quality-high-ink);
 }
 
 .meta-chip {
   background: rgba(32, 22, 19, 0.06);
+}
+
+.gender-chip[data-gender="female"] {
+  background: #fde0ea;
+  color: #a13a67;
+}
+
+.gender-chip[data-gender="male"] {
+  background: #dcecff;
+  color: #1d5fa8;
+}
+
+.gender-chip[data-gender="mixed"] {
+  background: #ece5ff;
+  color: #6a46b8;
 }
 
 .download-link {
@@ -373,15 +424,16 @@ h1 {
 }
 
 .card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: end;
+  display: grid;
   gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
 }
 
 .select-voice-button {
   background: rgba(32, 22, 19, 0.08);
   color: var(--ink);
+  width: 100%;
 }
 
 .select-voice-button.is-selected {
@@ -392,6 +444,10 @@ h1 {
 .download-link:hover,
 .download-link:focus-visible {
   background: #fff;
+}
+
+.download-link {
+  width: 100%;
 }
 
 .speaker-picker {
@@ -445,6 +501,7 @@ h1 {
   }
 
   .voice-card__header,
+  .tag-row,
   .meta-row {
     flex-direction: column;
     align-items: stretch;
@@ -455,6 +512,6 @@ h1 {
   }
 
   .card-actions {
-    justify-content: start;
+    grid-template-columns: 1fr;
   }
 }
